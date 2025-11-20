@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>小主请晋位 · 甄嬛2048</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft Yahei", sans-serif;
+      background: radial-gradient(circle at top, #fce8e6, #f5d7b3 40%, #c89a8a 80%);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      color: #4a2b28;
+    }
+    .game-wrapper {
+      margin-top: 40px;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 20px;
+      box-shadow: 0 18px 45px rgba(120, 60, 40, 0.35);
+      max-width: 420px;
+      width: 100%;
+    }
+    .title-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .title-main {
+      font-size: 26px;
+      font-weight: 700;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .title-sub {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    .badges {
+      display: flex;
+      gap: 8px;
+    }
+    .badge {
+      background: linear-gradient(135deg, #f4e1d2, #e3c3a1);
+      border-radius: 14px;
+      padding: 6px 10px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .badge span {
+      font-weight: 700;
+    }
+    .score-area {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .score-box {
+      flex: 1;
+      background: #f7e9dd;
+      border-radius: 14px;
+      padding: 8px 10px;
+      text-align: center;
+      box-shadow: inset 0 0 0 1px rgba(179, 123, 97, 0.35);
+    }
+    .score-label {
+      font-size: 11px;
+      opacity: 0.7;
+    }
+    .score-value {
+      margin-top: 2px;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .btn {
+      border: none;
+      outline: none;
+      cursor: pointer;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: linear-gradient(135deg, #c15e5c, #a0363c);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(160, 40, 40, 0.45);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 6px rgba(160, 40, 40, 0.45);
+    }
+    .hint {
+      font-size: 11px;
+      opacity: 0.75;
+    }
+
+    .board-wrapper {
+      position: relative;
+    }
+    .board {
+      position: relative;
+      width: 100%;
+      padding-top: 100%;
+      background: radial-gradient(circle at top, #f7e5db, #e3c3a7);
+      border-radius: 18px;
+      box-shadow: inset 0 0 0 2px rgba(166, 104, 78, 0.35);
+      overflow: hidden;
+    }
+    .grid {
+      position: absolute;
+      inset: 10px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 10px;
+    }
+    .cell {
+      background: rgba(255, 255, 255, 0.38);
+      border-radius: 14px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65);
+      position: relative;
+      overflow: hidden;
+    }
+    .tile {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 4px;
+      font-weight: 700;
+      transform: scale(1);
+      transition: transform 0.12s ease-out;
+    }
+    .tile-inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .tile-avatar {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #fff7eb;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+      border: 2px solid rgba(231, 192, 140, 0.9);
+    }
+    .tile-title {
+      font-size: 14px;
+      margin-bottom: 0;
+    }
+    .tile-sub {
+      font-size: 10px;
+      opacity: 0.85;
+    }
+
+    /* 宫廷阶位可视化配色（最终版） */
+    .tile-2 {
+      background-color: #FDE7EF;         /* 答应：淡粉 */
+      color: #8f3148;
+      border: 2px solid #EACBD7;
+    }
+    .tile-4 {
+      background-color: #D9F1DA;         /* 常在：薄荷绿 */
+      color: #2f6037;
+      border: 2px solid #B7D9BA;
+    }
+    .tile-8 {
+      background-color: #E8DFF7;         /* 贵人：浅紫 */
+      color: #4d3a7a;
+      border: 2px solid #C9C3E2;
+    }
+    .tile-16 {
+      background-color: #E7B4B8;         /* 嫔：雾玫瑰粉 */
+      color: #7e3740;
+      border: 2px solid #C8959A;
+    }
+    .tile-32 {
+      background-color: #C85B65;         /* 妃：深玫瑰粉 */
+      color: #fff7f8;
+      border: 2px solid #A8444E;
+      box-shadow: 0 0 8px rgba(200, 91, 101, 0.35);
+    }
+    .tile-64 {
+      background-color: #DFA967;         /* 贵妃：暖金珊瑚 */
+      color: #4f2c12;
+      border: 2px solid #B68140;
+      box-shadow: 0 0 10px rgba(223,169,103,0.45);
+    }
+    .tile-128 {
+      background-color: #B44A4E;         /* 皇贵妃：暗红金 */
+      color: #fff5f5;
+      border: 2px solid #8D3638;
+      box-shadow: 0 0 12px rgba(180,74,78,0.45);
+    }
+    .tile-256 {
+      background-color: #8B2C36;         /* 皇后：深绯红 */
+      color: #fff4f4;
+      border: 2px solid #6B1F26;
+      box-shadow: 0 0 14px rgba(139,44,54,0.5);
+    }
+    .tile-512 {
+      background-color: #5E5A48;         /* 太后：墨绿沉金 */
+      color: #f8f4ea;
+      border: 2px solid #4A4636;
+      box-shadow: 0 0 16px rgba(94,90,72,0.5);
+    }
+    .tile-1024,
+    .tile-2048 {
+      background: linear-gradient(135deg, #C6C0B5, #EDE9E2); /* 太皇太后/至尊：佛灰檀金 */
+      color: #4A3E32;
+      border: 2px solid #BBAF9C;
+      box-shadow: 0 0 18px rgba(204,198,186,0.55);
+    }
+
+    .tile.spawn {
+      transform: scale(0.4);
+      animation: pop 0.18s forwards ease-out;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.4); }
+      70% { transform: scale(1.06); }
+      100% { transform: scale(1); }
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(40, 20, 20, 0.62);
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.active {
+      display: flex;
+    }
+    .overlay-box {
+      background: #fff8f0;
+      border-radius: 18px;
+      padding: 18px 16px 14px;
+      text-align: center;
+      max-width: 80%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    }
+    .overlay-title {
+      font-weight: 700;
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+    .overlay-text {
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .overlay .btn {
+      font-size: 13px;
+      padding-inline: 16px;
+    }
+
+    @media (max-width: 480px) {
+      .game-wrapper {
+        margin-top: 20px;
+        border-radius: 16px;
+      }
+      .title-main {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-wrapper">
+    <div class="title-area">
+      <div class="title-main">
+        <div>小主请晋位</div>
+        <div class="title-sub">滑动棋盘，让同阶位的小主合并晋封，一路当上皇后</div>
+      </div>
+      <div class="badges">
+        <div class="badge">
+          🏯 <span>后宫版 2048</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="score-area">
+      <div class="score-box">
+        <div class="score-label">当前宠幸（得分）</div>
+        <div class="score-value" id="score">0</div>
+      </div>
+      <div class="score-box">
+        <div class="score-label">历史最高</div>
+        <div class="score-value" id="best-score">0</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="bgm-btn">🎵 开启古琴</button>
+      <button class="btn" id="restart-btn">🔁 从头入宫</button>
+      <div class="hint">电脑：方向键操作 · 手机：滑动棋盘</div>
+    </div>
+
+    <div class="board-wrapper">
+      <div class="board" id="board">
+        <div class="grid" id="grid"></div>
+        <div class="overlay" id="overlay">
+          <div class="overlay-box">
+            <div class="overlay-title" id="overlay-title">小主，游戏结束</div>
+            <div class="overlay-text" id="overlay-text">
+              此宫再也挤不下人了，要不要重开一世？
+            </div>
+            <button class="btn" id="overlay-restart">再入宫一回</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // 阶位 + Q版头像设定（单角色进化线）
+    const LEVEL_DATA = {
+      2:   {
+        title: "答应",
+        sub: "",
+        avatarEmoji: "🌸",
+        avatarImg: "img/2_zhenhuan_daying.png"
+      },
+      4:   {
+        title: "常在",
+        sub: "",
+        avatarEmoji: "🍃",
+        avatarImg: "img/4_zhenhuan_changzai.png"
+      },
+      8:   {
+        title: "贵人",
+        sub: "",
+        avatarEmoji: "💮",
+        avatarImg: "img/8_zhenhuan_guiren.png"
+      },
+      16:  {
+        title: "嫔",
+        sub: "",
+        avatarEmoji: "🎐",
+        avatarImg: "img/16_zhenhuan_pin.png"
+      },
+      32:  {
+        title: "妃",
+        sub: "",
+        avatarEmoji: "🎎",
+        avatarImg: "img/32_zhenhuan_fei.png"
+      },
+      64:  {
+        title: "贵妃",
+        sub: "",
+        avatarEmoji: "👑",
+        avatarImg: "img/64_zhenhuan_guifei.png"
+      },
+      128: {
+        title: "皇贵妃",
+        sub: "",
+        avatarEmoji: "🦚",
+        avatarImg: "img/128_zhenhuan_huangguifei.png"
+      },
+      256: {
+        title: "皇后",
+        sub: "",
+        avatarEmoji: "👸",
+        avatarImg: "img/256_zhenhuan_huanghou.png"
+      },
+      512: {
+        title: "太后",
+        sub: "",
+        avatarEmoji: "🕊️",
+        avatarImg: "img/512_zhenhuan_taihou.png"
+      },
+      1024:{
+        title: "太皇太后",
+        sub: "",
+        avatarEmoji: "⛩️",
+        avatarImg: "img/1024_zhenhuan_taihuangtaihou.png"
+      },
+      2048:{
+        title: "至尊",
+        sub: "九重紫禁之上",
+        avatarEmoji: "🐉",
+        avatarImg: ""
+      }
+    };
+
+    const SIZE = 4;
+    let grid = [];
+    let score = 0;
+    let bestScore = 0;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let gameOverFlag = false;
+
+    // Web Audio 厚重点“刷”音效
+    let audioCtx = null;
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      return audioCtx;
+    }
+
+    function playBeep() {
+      const ctx = getAudioCtx();
+      if (!ctx) return;
+
+      const bufferSize = Math.floor(0.25 * ctx.sampleRate);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      const intensity = 0.75;
+
+      for (let i = 0; i < bufferSize; i++) {
+        const r = Math.random() * 2 - 1;
+        data[i] = (Math.sign(r) * Math.pow(Math.abs(r), 0.42)) * intensity;
+      }
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 300;
+      filter.Q = 1.2;
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(1.0, ctx.currentTime + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+
+      source.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      source.start();
+    }
+
+    const gridElement = document.getElementById("grid");
+    const scoreElement = document.getElementById("score");
+    const bestScoreElement = document.getElementById("best-score");
+    const overlay = document.getElementById("overlay");
+    const overlayTitle = document.getElementById("overlay-title");
+    const overlayText = document.getElementById("overlay-text");
+    const restartBtn = document.getElementById("restart-btn");
+    const overlayRestartBtn = document.getElementById("overlay-restart");
+
+    function createGridCells() {
+      gridElement.innerHTML = "";
+      for (let i = 0; i < SIZE * SIZE; i++) {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        gridElement.appendChild(cell);
+      }
+    }
+
+    function initGrid() {
+      grid = [];
+      for (let r = 0; r < SIZE; r++) {
+        const row = new Array(SIZE).fill(0);
+        grid.push(row);
+      }
+    }
+
+    function getEmptyCells() {
+      const empty = [];
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === 0) empty.push({ r, c });
+        }
+      }
+      return empty;
+    }
+
+    function addRandomTile() {
+      const empty = getEmptyCells();
+      if (empty.length === 0) return;
+      const randomIndex = Math.floor(Math.random() * empty.length);
+      const { r, c } = empty[randomIndex];
+      grid[r][c] = Math.random() < 0.9 ? 2 : 4;
+    }
+
+    function updateScore(delta) {
+      if (!delta) return;
+      score += delta;
+      scoreElement.textContent = score;
+      if (score > bestScore) {
+        bestScore = score;
+        bestScoreElement.textContent = bestScore;
+        localStorage.setItem("zhenhuan2048-bestScore", bestScore);
+      }
+    }
+
+    function loadBestScore() {
+      const saved = localStorage.getItem("zhenhuan2048-bestScore");
+      if (saved) {
+        bestScore = parseInt(saved, 10) || 0;
+        bestScoreElement.textContent = bestScore;
+      }
+    }
+
+    function renderBoard(spawnPositions = []) {
+      const cells = document.querySelectorAll(".cell");
+      cells.forEach((cell) => (cell.innerHTML = ""));
+
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          const value = grid[r][c];
+          if (value === 0) continue;
+
+          const tile = document.createElement("div");
+          tile.classList.add("tile");
+          tile.classList.add("tile-" + value);
+
+          const data = LEVEL_DATA[value] || { title: value, sub: "", avatarEmoji: "❓" };
+
+          const inner = document.createElement("div");
+          inner.className = "tile-inner";
+
+          const avatar = document.createElement("div");
+          avatar.className = "tile-avatar";
+
+          if (data.avatarImg) {
+            avatar.style.backgroundImage = `url(${data.avatarImg})`;
+            avatar.textContent = "";
+          } else {
+            avatar.textContent = data.avatarEmoji || "⭐";
+          }
+
+          const title = document.createElement("div");
+          title.className = "tile-title";
+          title.textContent = data.title;
+
+          const sub = document.createElement("div");
+          sub.className = "tile-sub";
+          sub.textContent = data.sub || "";
+
+          inner.appendChild(avatar);
+          inner.appendChild(title);
+          if (data.sub) inner.appendChild(sub);
+          tile.appendChild(inner);
+
+          if (spawnPositions.some((p) => p.r === r && p.c === c)) {
+            tile.classList.add("spawn");
+          }
+
+          const index = r * SIZE + c;
+          cells[index].appendChild(tile);
+        }
+      }
+    }
+
+    function slideRow(row) {
+      const original = row.slice();
+      let arr = row.filter((v) => v !== 0);
+      let deltaScore = 0;
+
+      for (let i = 0; i < arr.length - 1; i++) {
+        if (arr[i] !== 0 && arr[i] === arr[i + 1]) {
+          arr[i] *= 2;
+          deltaScore += arr[i];
+          arr.splice(i + 1, 1);
+        }
+      }
+
+      while (arr.length < SIZE) {
+        arr.push(0);
+      }
+
+      const moved = !arr.every((v, i) => v === original[i]);
+      return { row: arr, moved, deltaScore };
+    }
+
+    function move(direction) {
+      if (gameOverFlag) return;
+      let moved = false;
+      let totalDeltaScore = 0;
+
+      if (direction === "left" || direction === "right") {
+        for (let r = 0; r < SIZE; r++) {
+          let row = grid[r].slice();
+          if (direction === "right") row.reverse();
+          const { row: newRow, moved: rowMoved, deltaScore } = slideRow(row);
+          totalDeltaScore += deltaScore;
+          if (direction === "right") newRow.reverse();
+          grid[r] = newRow;
+          if (rowMoved) moved = true;
+        }
+      } else if (direction === "up" || direction === "down") {
+        for (let c = 0; c < SIZE; c++) {
+          let col = [];
+          for (let r = 0; r < SIZE; r++) col.push(grid[r][c]);
+          if (direction === "down") col.reverse();
+          const { row: newCol, moved: colMoved, deltaScore } = slideRow(col);
+          totalDeltaScore += deltaScore;
+          if (direction === "down") newCol.reverse();
+          for (let r = 0; r < SIZE; r++) grid[r][c] = newCol[r];
+          if (colMoved) moved = true;
+        }
+      }
+
+      if (moved) {
+        playBeep();
+
+        if (totalDeltaScore > 0) {
+          playBeep();
+        }
+
+        updateScore(totalDeltaScore);
+        const beforeAddEmpty = getEmptyCells();
+        addRandomTile();
+        const afterAddEmpty = getEmptyCells();
+
+        const spawnPositions = [];
+        if (beforeAddEmpty.length - 1 === afterAddEmpty.length) {
+          const setBefore = new Set(beforeAddEmpty.map(p => p.r + "-" + p.c));
+          const setAfter = new Set(afterAddEmpty.map(p => p.r + "-" + p.c));
+          for (const tag of setBefore) {
+            if (!setAfter.has(tag)) {
+              const [r, c] = tag.split("-").map(Number);
+              spawnPositions.push({ r, c });
+            }
+          }
+        }
+
+        renderBoard(spawnPositions);
+
+        if (isGameOver()) {
+          showOverlay(false);
+        } else if (hasReachedQueen()) {
+          showOverlay(true);
+        }
+      }
+    }
+
+    function hasReachedQueen() {
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          if (grid[r][c] === 256) return true;
+        }
+      }
+      return false;
+    }
+
+    function isGameOver() {
+      if (getEmptyCells().length > 0) return false;
+      for (let r = 0; r < SIZE; r++) {
+        for (let c = 0; c < SIZE; c++) {
+          const v = grid[r][c];
+          if (r < SIZE - 1 && grid[r + 1][c] === v) return false;
+          if (c < SIZE - 1 && grid[r][c + 1] === v) return false;
+        }
+      }
+      return true;
+    }
+
+    function showOverlay(isWin) {
+      gameOverFlag = true;
+      overlay.classList.add("active");
+      if (isWin) {
+        overlayTitle.textContent = "恭喜小主，封为皇后";
+        overlayText.textContent = "母仪天下，后宫无不伏首。还要再玩一局，解锁更高位分吗？";
+        playBeep();
+      } else {
+        overlayTitle.textContent = "小主，游戏结束";
+        overlayText.textContent = "此宫已经挤到水泄不通，下次换个风水再来吧。";
+        playBeep();
+      }
+    }
+
+    function hideOverlay() {
+      overlay.classList.remove("active");
+      gameOverFlag = false;
+    }
+
+    function restartGame() {
+      hideOverlay();
+      score = 0;
+      scoreElement.textContent = "0";
+      initGrid();
+      addRandomTile();
+      addRandomTile();
+      renderBoard();
+    }
+
+    window.addEventListener("keydown", (e) => {
+      const key = e.key;
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(key)) {
+        e.preventDefault();
+      }
+      switch (key) {
+        case "ArrowUp":
+          move("up");
+          break;
+        case "ArrowDown":
+          move("down");
+          break;
+        case "ArrowLeft":
+          move("left");
+          break;
+        case "ArrowRight":
+          move("right");
+          break;
+        default:
+          break;
+      }
+    });
+
+    gridElement.addEventListener("touchstart", (e) => {
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+    }, { passive: true });
+
+    gridElement.addEventListener("touchend", (e) => {
+      const touch = e.changedTouches[0];
+      const dx = touch.clientX - touchStartX;
+      const dy = touch.clientY - touchStartY;
+
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+
+      const threshold = 24;
+      if (Math.max(absX, absY) < threshold) return;
+
+      if (absX > absY) {
+        if (dx > 0) move("right");
+        else move("left");
+      } else {
+        if (dy > 0) move("down");
+        else move("up");
+      }
+    }, { passive: true });
+
+    restartBtn.addEventListener("click", restartGame);
+    overlayRestartBtn.addEventListener("click", restartGame);
+
+    (function init() {
+      createGridCells();
+      loadBestScore();
+      restartGame();
+    })();
+  </script>
+
+  <!-- 古风背景音乐 -->
+  <audio id="bgm" loop src="https://cdn.jsdelivr.net/gh/quiet2005/music-assets/guqin1.mp3"></audio>
+  <script>
+    const bgm = document.getElementById("bgm");
+    const bgmBtn = document.getElementById("bgm-btn");
+    let bgmPlaying = false;
+
+    bgm.volume = 0;
+
+    function fadeInMusic() {
+      let vol = 0;
+      const fade = setInterval(() => {
+        if (vol >= 0.4) {
+          clearInterval(fade);
+        } else {
+          vol += 0.02;
+          bgm.volume = vol;
+        }
+      }, 120);
+    }
+
+    function tryAutoPlay() {
+      bgm.play().then(() => {
+        fadeInMusic();
+        bgmBtn.textContent = "🔇 关闭古琴";
+        bgmPlaying = true;
+      }).catch(() => {
+        bgmBtn.textContent = "🎵 点击开启古琴（浏览器阻止自动播放）";
+      });
+    }
+
+    window.addEventListener("click", tryAutoPlay, { once: true });
+    window.addEventListener("keydown", tryAutoPlay, { once: true });
+
+    bgmBtn.addEventListener("click", () => {
+      if (!bgmPlaying) {
+        bgm.play();
+        fadeInMusic();
+        bgmBtn.textContent = "🔇 关闭古琴";
+        bgmPlaying = true;
+      } else {
+        bgm.pause();
+        bgmBtn.textContent = "🎵 开启古琴";
+        bgmPlaying = false;
+      }
+    });
+  </script>
+</body>
+</html>
